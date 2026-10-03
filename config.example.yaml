@@ -1,0 +1,19 @@
+ollama:
+  url: "http://localhost:11434"
+  model_extraction: "llama3"
+  model_analysis: "llama3"
+  temperature: 0.1
+  timeout: 60
+
+paths:
+  output_dir: "data/output"
+  temp_dir: "data/temp"
+
+company:
+  razao_social: "Empresa Exemplo Ltda"
+  cnpj: "00.000.000/0001-00"
+  endereco: "Rua Exemplo, 123, Centro"
+  telefone: "(00) 0000-0000"
+  email: "contato@exemplo.com"
+  dados_bancarios: "Banco X, Ag 000, CC 000"
+  porte: "ME"
