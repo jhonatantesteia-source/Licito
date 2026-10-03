@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-import fitz
+import pymupdf
 from docx import Document
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -21,7 +21,7 @@ class DeterministicParser:
 
     def extract_from_pdf(self, path: Path) -> List[Dict]:
         items = []
-        with fitz.open(path) as doc:
+        with pymupdf.open(path) as doc:
             for page in doc:
                 tabs = page.find_tables()
                 for tab in tabs:
