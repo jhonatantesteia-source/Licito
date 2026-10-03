@@ -79,13 +79,16 @@ class DeterministicParser:
                 cells = [cell.text.strip() for cell in row.cells]
                 if i == 0 or "ITEM" in cells[0].upper(): continue
                 if len(cells) >= 5:
-                    items.append({
-                        "id": cells[0],
-                        "description": cells[1],
-                        "unit": cells[2],
-                        "quantity": float(cells[3].replace(",", ".")),
-                        "ceiling_price": self.parse_money(cells[4])
-                    })
+                    try:
+                        items.append({
+                            "id": cells[0],
+                            "description": cells[1],
+                            "unit": cells[2],
+                            "quantity": float(cells[3].replace(",", ".")),
+                            "ceiling_price": self.parse_money(cells[4])
+                        })
+                    except ValueError:
+                        continue
         return items
 
     def parse(self, path: Path) -> List[Dict]:
