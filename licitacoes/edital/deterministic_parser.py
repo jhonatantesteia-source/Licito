@@ -57,15 +57,18 @@ class DeterministicParser:
 
         for line in lines:
             cols = [c.strip() for c in line.split("|") if c.strip()]
-            if not cols or "ITEM" in cols[0].upper(): continue
+            if not cols or "ITEM" in cols[0].upper() or "---" in cols[0]: continue
             if len(cols) >= 5:
-                items.append({
-                    "id": cols[0],
-                    "description": cols[1],
-                    "unit": cols[2],
-                    "quantity": float(cols[3].replace(",", ".")),
-                    "ceiling_price": self.parse_money(cols[4])
-                })
+                try:
+                    items.append({
+                        "id": cols[0],
+                        "description": cols[1],
+                        "unit": cols[2],
+                        "quantity": float(cols[3].replace(",", ".")),
+                        "ceiling_price": self.parse_money(cols[4])
+                    })
+                except ValueError:
+                    continue
         return items
 
     def extract_from_docx(self, path: Path) -> List[Dict]:
