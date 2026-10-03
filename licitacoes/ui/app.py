@@ -100,7 +100,7 @@ with col1:
     st.subheader(f"📌 {tender_name}")
 with col2:
     # Mock countdown for now
-    st.markdown("<div style='text-align:right; color:red; font-weight:bold;'>⏳ Prazo: 2d 14h</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; color:red; font-weight:bold;'>⏳ Prazo: Calculando...</div>", unsafe_allow_html=True)
 with col3:
     try:
         requests.get(f"{settings.ollama.url}/api/tags", timeout=1)
@@ -168,17 +168,8 @@ def page_proposta():
     st.header("💰 Passo 2: Minha Proposta")
     st.info("Edite os preços e marcas abaixo. O sistema calcula os totais automaticamente.")
 
-    # Mock data for UI demonstration
-    items = [
-        {"id": "01", "desc": "Papel A4 75g", "qty": 100, "unit": "un", "max": 25.0},
-        {"id": "02", "caneta": "Caneta Azul", "qty": 500, "unit": "un", "max": 1.50},
-    ]
-
-    df = pd.DataFrame(items)
-    edited_df = st.data_editor(df, num_rows="dynamic")
-
-    if st.button("⬇️ BAIXAR PROPOSTA (EXCEL)", type="primary"):
-        st.success("Proposta baixada com sucesso!")
+    from licitacoes.ui.proposal_page import page_proposta as render_proposal
+    render_proposal()
 
 def page_concorrentes():
     st.header("👥 Passo 3: Concorrentes")
