@@ -6,9 +6,15 @@ from datetime import date
 
 def test_cnpj_valid():
     rule = CNPJRule()
-    assert rule.is_valid("00.000.000/0001-91") == False # Just a dummy check
-    # Real valid CNPJ would be needed for true test, but let's test the logic
-    assert rule.is_valid("123") == False
+    # válidos (dígito verificador correto)
+    assert rule.is_valid("00.000.000/0001-91")
+    assert rule.is_valid("12.345.678/0001-95")
+    assert rule.is_valid("12345678000195")          # sem máscara
+    # inválidos
+    assert not rule.is_valid("00.000.000/0001-92")  # dígito errado
+    assert not rule.is_valid("11.111.111/1111-11")  # todos iguais
+    assert not rule.is_valid("123")                 # tamanho errado
+    assert not rule.is_valid("")                    # vazio
 
 def test_certificate_expiry():
     rule = CertificateRule()
