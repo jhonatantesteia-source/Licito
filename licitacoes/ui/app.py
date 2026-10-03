@@ -103,15 +103,15 @@ def page_setup():
     with st.form("company_form"):
         c1, c2 = st.columns(2)
         with c1:
-            razao = st.text_input("Razão Social", value=settings.company.razao_social)
-            cnpj = st.text_input("CNPJ", value=settings.company.cnpj)
-            endereco = st.text_area("Endereço", value=settings.company.endereco)
+            razao = st.text_input("Razão Social", value=CompanyService.get_company_data().razao_social)
+            cnpj = st.text_input("CNPJ", value=CompanyService.get_company_data().cnpj)
+            endereco = st.text_area("Endereço", value=CompanyService.get_company_data().endereco)
         with c2:
             porte = st.selectbox("Porte da Empresa", ["ME", "EPP", "MEI"],
-                               index=0 if settings.company.porte == "ME" else 1 if settings.company.porte == "EPP" else 2)
-            email = st.text_input("E-mail", value=settings.company.email)
-            tel = st.text_input("Telefone", value=settings.company.telefone)
-            banco = st.text_input("Dados Bancários", value=settings.company.dados_bancarios)
+                               index=0 if CompanyService.get_company_data().porte == "ME" else 1 if CompanyService.get_company_data().porte == "EPP" else 2)
+            email = st.text_input("E-mail", value=CompanyService.get_company_data().email)
+            tel = st.text_input("Telefone", value=CompanyService.get_company_data().telefone)
+            banco = st.text_input("Dados Bancários", value=CompanyService.get_company_data().dados_bancarios)
 
         if st.form_submit_button("SALVAR E COMEÇAR →"):
             CompanyService.update_company_data({
