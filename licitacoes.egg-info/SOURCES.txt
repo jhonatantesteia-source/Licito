@@ -1,0 +1,10 @@
+pyproject.toml
+licitacoes/__init__.py
+licitacoes/cli.py
+licitacoes/config.py
+licitacoes.egg-info/PKG-INFO
+licitacoes.egg-info/SOURCES.txt
+licitacoes.egg-info/dependency_links.txt
+licitacoes.egg-info/requires.txt
+licitacoes.egg-info/top_level.txt
+tests/test_rules.py

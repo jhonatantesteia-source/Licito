@@ -1,0 +1,23 @@
+# ⚖️ Analisador de Licitações - Guia Rápido
+
+Este programa ajuda você a analisar editais de licitação e conferir a documentação de seus concorrentes de forma automática e local.
+
+## 🚀 Como começar
+
+1. **Instalação**: Dê um duplo clique no arquivo `INSTALAR.bat`. Siga as instruções na tela (instale o Tesseract e o Ollama se o programa pedir).
+2. **Início**: Dê um duplo clique no arquivo `INICIAR.bat`. O programa abrirá automaticamente no seu navegador.
+3. **Configuração**: Siga o **Passo 0** para colocar os dados da sua empresa. Isso evita que você tenha que digitar tudo toda vez.
+
+## 📖 Fluxo de Trabalho
+
+1. **Edital**: Arraste o arquivo do edital. O programa dirá se você pode participar, quais os prazos e criará a lista de documentos que você precisa providenciar.
+2. **Proposta**: O programa gera a planilha de preços. Basta preencher a sua marca e o seu preço. Se ficar acima do teto, ele avisará em vermelho.
+3. **Concorrentes**: Adicione as pastas dos concorrentes. O programa lerá os PDFs e buscará erros (certidões vencidas, CNPJ errado, etc).
+4. **Resultado**: Veja quem é o provável vencedor e gere rascunhos de recursos para inabilitar concorrentes irregulares.
+
+## 🔒 Segurança e Privacidade
+- **Tudo Local**: Seus dados e os documentos dos concorrentes **nunca** saem do seu computador.
+- **Privacidade**: O programa não usa internet para analisar os documentos.
+
+## 🛠️ Suporte Técnico
+Se o programa não abrir, verifique se o Ollama está aberto (ícone da lhama perto do relógio do Windows).

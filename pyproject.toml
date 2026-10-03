@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "licitacoes"
+version = "0.1.0"
+description = "Analisador de Licitações e Conferência de Habilitação"
+dependencies = [
+    "streamlit",
+    "pydantic",
+    "pymupdf",
+    "python-docx",
+    "openpyxl",
+    "pyyaml",
+    "requests",
+    "typer",
+    "pillow",
+    "pytest"
+]
+
+[tool.setuptools]
+packages = ["licitacoes"]

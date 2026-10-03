@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: licitacoes
+Version: 0.1.0
+Summary: Analisador de Licitações e Conferência de Habilitação
+Requires-Dist: streamlit
+Requires-Dist: pydantic
+Requires-Dist: pymupdf
+Requires-Dist: python-docx
+Requires-Dist: openpyxl
+Requires-Dist: pyyaml
+Requires-Dist: requests
+Requires-Dist: typer
+Requires-Dist: pillow
+Requires-Dist: pytest

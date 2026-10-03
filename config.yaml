@@ -1,0 +1,22 @@
+# Ollama Configuration
+ollama:
+  url: "http://localhost:11434"
+  model_extraction: "qwen2.5:14b-instruct"
+  model_analysis: "qwen2.5:14b-instruct"
+  temperature: 0
+  timeout: 120
+
+# Local Directories
+paths:
+  output_dir: "./outputs"
+  temp_dir: "./temp"
+
+# Company Data (for Proposal Generation)
+company:
+  razao_social: "EMPRESA EXEMPLO LTDA"
+  cnpj: "00.000.000/0000-00"
+  endereco: "Rua Exemplo, 123, Cidade - UF"
+  telefone: "(00) 0000-0000"
+  email: "contato@exemplo.com.br"
+  dados_bancarios: "Banco X, Agência 0000, Conta 00000-0"
+  porte: "ME" # ME, EPP, MEI

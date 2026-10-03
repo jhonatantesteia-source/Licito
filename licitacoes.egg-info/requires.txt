@@ -1,0 +1,10 @@
+streamlit
+pydantic
+pymupdf
+python-docx
+openpyxl
+pyyaml
+requests
+typer
+pillow
+pytest
