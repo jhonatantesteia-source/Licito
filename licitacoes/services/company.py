@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from licitacoes.config import settings, Config
+from licitacoes.config import settings, Config, CompanyConfig
 
 class CompanyService:
     """Service to manage company configuration."""
@@ -9,7 +9,7 @@ class CompanyService:
     def update_company_data(data: dict):
         # Update config.yaml
         current_config = load_config()
-        current_config.company = Config.CompanyConfig(**data)
+        current_config.company = CompanyConfig(**data)
 
         with open("config.yaml", "w", encoding="utf-8") as f:
             yaml.dump(current_config.model_dump(), f, default_flow_style=False)
