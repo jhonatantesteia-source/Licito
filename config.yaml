@@ -1,22 +1,17 @@
-# Ollama Configuration
 ollama:
-  url: "http://localhost:11434"
-  model_extraction: "qwen2.5:14b-instruct"
-  model_analysis: "qwen2.5:14b-instruct"
-  temperature: 0
+  url: http://localhost:11434
+  model_extraction: qwen2.5:14b-instruct
+  model_analysis: qwen2.5:14b-instruct
+  temperature: 0.0
   timeout: 120
-
-# Local Directories
 paths:
-  output_dir: "./outputs"
-  temp_dir: "./temp"
-
-# Company Data (for Proposal Generation)
+  output_dir: ./outputs
+  temp_dir: ./temp
 company:
-  razao_social: "EMPRESA EXEMPLO LTDA"
-  cnpj: "00.000.000/0000-00"
-  endereco: "Rua Exemplo, 123, Cidade - UF"
-  telefone: "(00) 0000-0000"
-  email: "contato@exemplo.com.br"
-  dados_bancarios: "Banco X, Agência 0000, Conta 00000-0"
-  porte: "ME" # ME, EPP, MEI
+  razao_social: FERNANDO A.A. DA SILVA LTDA
+  cnpj: '34458628000157'
+  endereco: RUA SEFERINO QUINCHO RAGO, 65 - IGUATEMI, MS
+  telefone: (67) 3471-13226
+  email: contato@exemplo.com.br
+  dados_bancarios: Banco X, Agência 0000, Conta 00000-0
+  porte: ME
