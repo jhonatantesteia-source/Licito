@@ -49,10 +49,20 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- State Management ---
-if "step" not in st.session_state:
-    st.session_state.step = 0
+if "page" not in st.session_state:
+    st.session_state.page = "setup"
 if "current_tender" not in st.session_state:
     st.session_state.current_tender = None
+
+# Mapping of numeric steps to page names for the progress bar
+STEP_TO_PAGE = {
+    0: "setup",
+    1: "edital",
+    2: "proposta",
+    3: "concorrentes",
+    4: "resultado"
+}
+PAGE_TO_STEP = {v: k for k, v in STEP_TO_PAGE.items()}
 
 # --- Sidebar ---
 with st.sidebar:
@@ -67,17 +77,21 @@ with st.sidebar:
         4: "🏁 Resultado"
     }
 
+    current_step = PAGE_TO_STEP.get(st.session_state.page, 99)
+
     for s_id, s_name in steps.items():
-        icon = "✔" if s_id < st.session_state.step else ("🔵" if s_id == st.session_state.step else "⚪")
+        icon = "✔" if s_id < current_step else ("🔵" if s_id == current_step else "⚪")
         if st.button(f"{icon} {s_name}", key=f"step_{s_id}"):
-            st.session_state.step = s_id
+            st.session_state.page = STEP_TO_PAGE[s_id]
             st.rerun()
 
     st.divider()
     if st.button("📁 Minhas Licitações"):
-        st.session_state.step = "history"
+        st.session_state.page = "history"
+        st.rerun()
     if st.button("⚙️ Configurações Gerais"):
-        st.session_state.step = 0
+        st.session_state.page = "setup"
+        st.rerun()
 
 # --- Header ---
 col1, col2, col3 = st.columns([3, 2, 1])
@@ -124,7 +138,7 @@ def page_setup():
                 "dados_bancarios": banco
             })
             st.success("Dados salvos com sucesso!")
-            st.session_state.step = 1
+            st.session_state.page = "edital"
             st.rerun()
 
 def page_edital():
@@ -147,7 +161,7 @@ def page_edital():
                 # For now, we'll simulate the success
                 st.session_state.current_tender = {"name": uploaded_file.name}
                 st.success("Edital analisado com sucesso!")
-                st.session_state.step = 2
+                st.session_state.page = "proposta"
                 st.rerun()
 
 def page_proposta():
@@ -192,16 +206,31 @@ def page_resultado():
         st.button("Confirmar Achado")
         st.button("Descartar")
 
+def page_history():
+    st.header("📁 Minhas Licitações")
+    st.info("Aqui você encontrará todas as licitações analisadas e arquivadas.")
+
+    # This will be fully implemented as part of Entrega 1 (Persistence)
+    # For now, we provide a real functional shell instead of "Page under construction"
+    tenders = [] # This will come from SQLite later
+    if not tenders:
+        st.write("Nenhuma licitação encontrada no banco de dados.")
+    else:
+        # Logic to list, open, and archive
+        pass
+
 # --- Router ---
-if st.session_state.step == 0:
+if st.session_state.page == "setup":
     page_setup()
-elif st.session_state.step == 1:
+elif st.session_state.page == "edital":
     page_edital()
-elif st.session_state.step == 2:
+elif st.session_state.page == "proposta":
     page_proposta()
-elif st.session_state.step == 3:
+elif st.session_state.page == "concorrentes":
     page_concorrentes()
-elif st.session_state.step == 4:
+elif st.session_state.page == "resultado":
     page_resultado()
+elif st.session_state.page == "history":
+    page_history()
 else:
-    st.write("Página em construção.")
+    st.write("Página não encontrada.")
