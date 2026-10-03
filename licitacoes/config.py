@@ -4,7 +4,7 @@ from typing import Optional
 from pathlib import Path
 
 # Define the project root once and for all
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -38,6 +38,16 @@ def load_config(config_path: str = "config.yaml") -> Config:
     path = Path(config_path)
     if not path.is_absolute():
         path = BASE_DIR / config_path
+
+    if not path.exists():
+        # Fallback to example if real config is missing
+        example_path = BASE_DIR / "config.example.yaml"
+        if example_path.exists():
+            # Copy example to config.yaml to avoid FileNotFoundError
+            import shutil
+            shutil.copy(example_path, path)
+        else:
+            raise FileNotFoundError(f"Config file not found: {path} and no example available.")
 
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
