@@ -1,0 +1,50 @@
+# ===== DADOS PESSOAIS E SENSÍVEIS (nunca enviar) =====
+data/
+config.yaml
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Arquivos gerados pelo programa (propostas, relatórios, ZIPs)
+saidas/
+output/
+outputs/
+*.zip
+
+# Mantém o modelo de configuração sem dados reais
+!config.example.yaml
+
+# ===== PYTHON =====
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ===== LOGS E TEMPORÁRIOS =====
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+temp_edital/
+
+# ===== EDITORES E SISTEMA =====
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*
