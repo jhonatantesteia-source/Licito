@@ -148,21 +148,34 @@ def page_edital():
 
     if uploaded_file:
         if st.button("ANALISAR EDITAL", type="primary"):
-            with st.spinner("🤖 Analisando edital com IA... Isso pode levar alguns instantes."):
-                # Temporary save to disk for the existing service
+            with st.spinner("🤖 Analisando edital..."):
                 temp_path = Path("temp_edital") / uploaded_file.name
                 temp_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(temp_path, "wb") as f:
                     f.write(uploaded_file.getvalue())
 
-                # Call CLI logic via a temporary import or service
-                from licitacoes.cli import analisar_edital
-                # Note: In a real app, we'd refactor cli.py to just be a wrapper for services
-                # For now, we'll simulate the success
-                st.session_state.current_tender = {"name": uploaded_file.name}
-                st.success("Edital analisado com sucesso!")
-                st.session_state.page = "proposta"
-                st.rerun()
+                from licitacoes.edital.deterministic_parser import DeterministicParser
+                from licitacoes.services.persistence import PersistenceService
+
+                parser = DeterministicParser()
+                items = parser.parse(temp_path)
+
+                if items:
+                    tender_data = {
+                        "name": uploaded_file.name,
+                        "organ": "Não identificado",
+                        "process_number": "Não identificado",
+                        "estimated_total": sum(it['quantity'] * it['ceiling_price'] for it in items),
+                        "extraction_method": "deterministic"
+                    }
+                    tender_id = PersistenceService.save_tender(tender_data, items)
+                    st.session_state.current_tender_id = tender_id
+                    st.session_state.current_tender = {"name": uploaded_file.name}
+                    st.success(f"Edital analisado! {len(items)} itens extraídos.")
+                    st.session_state.page = "proposta"
+                    st.rerun()
+                else:
+                    st.error("Não consegui ler os itens do edital. Confira o arquivo ou adicione os itens manualmente.")
 
 def page_proposta():
     st.header("💰 Passo 2: Minha Proposta")
