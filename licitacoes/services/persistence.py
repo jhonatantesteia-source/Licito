@@ -118,7 +118,26 @@ def connect(db_path: str | Path | None = None):
         conn.close()
 
 
-# ------------------------------------------------------------ licitações
+# ------------------------------------------------------------ utilidades de conversão
+def to_decimal(value: Any) -> Decimal | None:
+    """Converte valor do banco (TEXT ou INTEGER cents) para Decimal."""
+    if value is None:
+        return None
+    try:
+        if isinstance(value, int):
+            # Se for int, assumimos centavos (legado)
+            return (Decimal(value) / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        # Se for string, assume-se representação decimal "31.99"
+        return Decimal(str(value)).quantize(Decimal("0.01"), ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+
+def from_decimal(value: Decimal | None) -> str | None:
+    """Converte Decimal para string para persistência em TEXT."""
+    if value is None:
+        return None
+    # Retorna "31.99"
+    return str(value.quantize(Decimal("0.01"), ROUND_HALF_UP))
 def create_tender(name: str, items, *, organ=None, process_number=None, modality=None,
                   estimated_total_cents=None, deadlines: dict | None = None, edital_sha256=None,
                   edital_path=None, extraction_method="deterministic", needs_review=False,

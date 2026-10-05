@@ -1,45 +1,64 @@
-"""Dinheiro sempre em CENTAVOS (int). Nunca float."""
+"""Dinheiro sempre em Decimal. Nunca float."""
 import re
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
-
-_BR = re.compile(r"^\d{1,3}(\.\d{3})+(,\d+)?$|^\d+(,\d+)?$")   # 1.234,56 | 31,51 | 11
-_EN = re.compile(r"^\d+\.\d{1,2}$")                              # 31.51
-
+from licitacoes.ingest.money import parse_brl
 
 def parse_brl_to_cents(text) -> int | None:
-    """'R$ 1.234,56' -> 123456 ; '31,51' -> 3151 ; '11' -> 1100 ; inválido -> None."""
-    if text is None:
+    """
+    DEPRECATED: Use parse_brl from licitacoes.ingest.money instead.
+    Maintained for backward compatibility during migration.
+    """
+    val = parse_brl(text)
+    if val is None:
         return None
-    s = str(text).replace("\\", "").replace("R$", "").replace("r$", "")
-    s = re.sub(r"\s+", "", s).strip("*")
-    if not s:
-        return None
-    if _BR.match(s):
-        s = s.replace(".", "").replace(",", ".")
-    elif not _EN.match(s):
-        return None
+    return int((val * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+def format_brl(val: Decimal | int | float | None) -> str:
+    """
+    Converts a monetary value to 'R$ 1.234,56'.
+    Accepts Decimal (preferred), int (cents), or float.
+    """
+    if val is None:
+        return ""
+
+    # If it's an int, treat it as cents
+    if isinstance(val, int):
+        cents = abs(val)
+        reais, cent = divmod(cents, 100)
+        return f"R$ {reais:,}".replace(",", ".") + f",{cent:02d}"
+
+    # If it's float or Decimal, treat as units
     try:
-        d = Decimal(s)
-    except InvalidOperation:
-        return None
-    if d < 0:
-        return None
-    return int((d * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-
-
-def format_brl(cents: int | None) -> str:
-    """123456 -> 'R$ 1.234,56' (sem float)."""
-    if cents is None:
+        d = Decimal(str(val)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError):
         return ""
-    sign = "-" if cents < 0 else ""
-    cents = abs(int(cents))
-    reais, cent = divmod(cents, 100)
-    return f"{sign}R$ {reais:,}".replace(",", ".") + f",{cent:02d}"
 
+    # Format Decimal to BRL string
+    s = "{:,.2f}".format(d)
+    # Swap dots and commas for BR format
+    # 1,234.56 -> 1.234,56
+    main, dec = s.rsplit(".", 1)
+    main = main.replace(",", ".")
+    return f"R$ {main},{dec}"
 
-def format_plain(cents: int | None) -> str:
-    """3151 -> '31,51' (para campos de edição)."""
-    if cents is None:
+def format_plain(val: Decimal | int | float | None) -> str:
+    """
+    Converts a monetary value to '1.234,56' (for editing fields).
+    Accepts Decimal (preferred), int (cents), or float.
+    """
+    if val is None:
         return ""
-    reais, cent = divmod(int(cents), 100)
-    return f"{reais},{cent:02d}"
+
+    if isinstance(val, int):
+        reais, cent = divmod(abs(val), 100)
+        return f"{reais:,}".replace(",", ".") + f",{cent:02d}"
+
+    try:
+        d = Decimal(str(val)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError):
+        return ""
+
+    s = "{:,.2f}".format(d)
+    main, dec = s.rsplit(".", 1)
+    main = main.replace(",", ".")
+    return f"{main},{dec}"

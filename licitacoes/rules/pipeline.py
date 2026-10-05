@@ -49,10 +49,70 @@ class FullParticipantChecker:
                 })
 
             elif doc_class.category == "proposta":
-                # For simplicity in Phase 3, we'll simulate the extracted items list
-                # In a full version, the extractor would return a list of objects
-                participant_structured_data["proposal_items"] = [] # Simplified
-                participant_structured_data["proposal_total"] = fields.get("global_total")
+                # Use DeterministicParser to extract structured proposal items
+                from licitacoes.edital.deterministic_parser import DeterministicParser
+                parser = DeterministicParser()
+                deterministic_items = parser.parse(file_path)
+
+                # LLM extraction (already done via fields = data_extractor.extract_fields)
+                # We need to merge them ensuring deterministic precedence.
+
+                merged_items = []
+                conflicts = []
+
+                # deterministic_items is a list of dicts from DeterministicParser
+                # Fields: id, description, unit, quantity, unit_price, total_price, ceiling_price
+
+                # The LLM extracted items might be in fields.get("proposal_items")
+                llm_items = fields.get("proposal_items", [])
+                if isinstance(llm_items, str):
+                    # Try to parse if it's a JSON string
+                    import json
+                    try:
+                        llm_items = json.loads(llm_items)
+                    except:
+                        llm_items = []
+
+                # Create a map for LLM items for easier lookup
+                llm_map = {str(item.get("id")): item for item in llm_items if item.get("id")}
+
+                for d_item in deterministic_items:
+                    item_id = str(d_item["id"])
+                    l_item = llm_map.get(item_id, {})
+
+                    merged_item = d_item.copy()
+
+                    # Check for conflicts and ensure precedence
+                    for field in ["unit_price", "total_price", "quantity"]:
+                        d_val = d_item.get(field)
+                        l_val = l_item.get(field)
+
+                        if d_val is not None:
+                            # Deterministic wins. Check for conflict.
+                            if l_val is not None and l_val != d_val:
+                                conflicts.append({
+                                    "item_id": item_id,
+                                    "field": field,
+                                    "deterministic": d_val,
+                                    "llm": l_val,
+                                    "action": "kept_deterministic"
+                                })
+                        else:
+                            # LLM is fallback
+                            merged_item[field] = l_val
+
+                    merged_items.append(merged_item)
+
+                # Handle items only found by LLM
+                deterministic_ids = {str(i["id"]) for i in deterministic_items}
+                for l_item in llm_items:
+                    l_id = str(l_item.get("id"))
+                    if l_id and l_id not in deterministic_ids:
+                        merged_items.append(l_item)
+
+                participant_structured_data["proposal_items"] = merged_items
+                participant_structured_data["proposal_total_declared"] = fields.get("global_total")
+                participant_structured_data["extraction_conflicts"] = conflicts
 
         # 1. Run Deterministic Rules
         # We need to convert date strings to date objects for the rules engine
