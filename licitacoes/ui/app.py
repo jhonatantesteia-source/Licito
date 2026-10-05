@@ -13,6 +13,7 @@ from pathlib import Path
 from licitacoes.config import settings
 from licitacoes.services.company import CompanyService
 from licitacoes.llm.client import llm_client
+from licitacoes.ui.proposta import render_edital_page, render_proposta_page
 import requests
 
 # --- Page Config ---
@@ -60,7 +61,8 @@ STEP_TO_PAGE = {
     1: "edital",
     2: "proposta",
     3: "concorrentes",
-    4: "resultado"
+    4: "resultado",
+    5: "comparativo"
 }
 PAGE_TO_STEP = {v: k for k, v in STEP_TO_PAGE.items()}
 
@@ -74,7 +76,8 @@ with st.sidebar:
         1: "📄 Edital",
         2: "💰 Minha Proposta",
         3: "👥 Concorrentes",
-        4: "🏁 Resultado"
+        4: "🏁 Resultado",
+        5: "📊 Comparativo"
     }
 
     current_step = PAGE_TO_STEP.get(st.session_state.page, 99)
@@ -108,7 +111,9 @@ with col3:
     except:
         st.markdown("<div style='text-align:right; color:red;'>🔴 Ollama</div>", unsafe_allow_html=True)
 
-# --- Pages ---
+def _ir_para(page_name):
+    st.session_state.page = page_name
+    st.rerun()
 
 def page_setup():
     st.header("⚙️ Configuração Inicial")
@@ -142,73 +147,208 @@ def page_setup():
             st.rerun()
 
 def page_edital():
-    st.header("📄 Passo 1: O Edital")
-
-    uploaded_file = st.file_uploader("Arraste o edital aqui (PDF, DOCX ou MD)", type=["pdf", "docx", "md"])
-
-    if uploaded_file:
-        if st.button("ANALISAR EDITAL", type="primary"):
-            with st.spinner("🤖 Analisando edital..."):
-                temp_path = Path("temp_edital") / uploaded_file.name
-                temp_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_file.getvalue())
-
-                from licitacoes.edital.deterministic_parser import DeterministicParser
-                from licitacoes.services.persistence import PersistenceService
-
-                parser = DeterministicParser()
-                items = parser.parse(temp_path)
-
-                if items:
-                    tender_data = {
-                        "name": uploaded_file.name,
-                        "organ": "Não identificado",
-                        "process_number": "Não identificado",
-                        "estimated_total": sum(it['quantity'] * it['ceiling_price'] for it in items),
-                        "extraction_method": "deterministic"
-                    }
-                    tender_id = PersistenceService.save_tender(tender_data, items)
-                    st.session_state.current_tender_id = tender_id
-                    st.session_state.current_tender = {"name": uploaded_file.name}
-                    st.success(f"Edital analisado! {len(items)} itens extraídos.")
-                    st.session_state.page = "proposta"
-                    st.rerun()
-                else:
-                    st.error("Não consegui ler os itens do edital. Confira o arquivo ou adicione os itens manualmente.")
+    render_edital_page(on_done=lambda: _ir_para("proposta"))
 
 def page_proposta():
-    st.header("💰 Passo 2: Minha Proposta")
-    st.info("Edite os preços e marcas abaixo. O sistema calcula os totais automaticamente.")
+    render_proposta_page()
 
-    from licitacoes.ui.proposal_page import page_proposta as render_proposal
-    render_proposal()
+    # Botão de navegação para a próxima tela
+    st.divider()
+    if st.button("PRÓXIMO PASSO: CONCORRENTES →", type="primary"):
+        _ir_para("concorrentes")
 
 def page_concorrentes():
     st.header("👥 Passo 3: Concorrentes")
 
-    if st.button("+ ADICIONAR CONCORRENTE"):
-        st.text_input("Nome da Empresa")
-        st.file_uploader("Arquivos do concorrente", accept_multiple_files=True)
+    # Obter o ID da licitação atual
+    tender_id = st.session_state.get("current_tender_id") or st.session_state.get("tender_id")
+    if not tender_id:
+        st.warning("Por favor, analise um edital primeiro.")
+        return
+
+    # --- Formulário para adicionar concorrente ---
+    with st.expander("➕ Adicionar Novo Concorrente", expanded=True):
+        with st.form("add_competitor_form", clear_on_submit=True):
+            name = st.text_input("Nome da Empresa")
+            uploaded_files = st.file_uploader("Arquivos do concorrente", accept_multiple_files=True)
+            submit = st.form_submit_button("SALVAR CONCORRENTE")
+
+            if submit and name:
+                from licitacoes.services.persistence import create_competitor, add_competitor_file
+                from licitacoes.config import DATA_DIR
+
+                # 1. Salva o concorrente no banco
+                comp_id = create_competitor(tender_id, name)
+
+                # 2. Salva os arquivos no disco
+                if uploaded_files:
+                    storage_path = DATA_DIR / "competitors" / str(tender_id) / str(comp_id)
+                    storage_path.mkdir(parents=True, exist_ok=True)
+
+                    for uploaded_file in uploaded_files:
+                        file_path = storage_path / uploaded_file.name
+                        with open(file_path, "wb") as f:
+                            f.write(uploaded_file.getvalue())
+                        # Registra o caminho no banco
+                        add_competitor_file(comp_id, uploaded_file.name, str(file_path))
+
+                st.success(f"Concorrente {name} adicionado com sucesso!")
+                st.rerun()
+            elif submit and not name:
+                st.error("O nome da empresa é obrigatório.")
 
     st.divider()
+
+    # --- Lista de Concorrentes Adicionados ---
     st.write("### Licitantes Adicionados")
-    st.info("Nenhum concorrente adicionado ainda.")
+    from licitacoes.services.persistence import list_competitors, delete_competitor
+    competitors = list_competitors(tender_id)
+
+    if not competitors:
+        st.info("Nenhum concorrente adicionado ainda.")
+    else:
+        for comp in competitors:
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.write(f"**{comp['name']}**")
+            with col2:
+                if st.button("🗑️", key=f"del_comp_{comp['id']}"):
+                    delete_competitor(comp['id'])
+                    st.rerun()
+
+    # Botão de navegação para a próxima tela
+    st.divider()
+    if competitors:
+        if st.button("PRÓXIMO PASSO: RESULTADO →", type="primary"):
+            _ir_para("resultado")
+    else:
+        st.info("Adicione ao menos um concorrente para prosseguir para a análise de resultados.")
 
 def page_resultado():
     st.header("🏁 Passo 4: Resultado")
-    st.warning("Selecione um concorrente para ver os achados.")
 
-    concorrente = st.selectbox("Escolha o licitante", ["Nenhum"])
-    if concorrente != "Nenhum":
-        st.error("🔴 Possível motivo de inabilitação encontrado!")
-        st.markdown("""
-        **Achado:** Certidão do FGTS vencida em 12/09/2026
-        **Exigência:** Cláusula 8.1 - Certidão válida na data da sessão.
-        **Evidência:** 'Válido até: 12/09/2026' (Arquivo: fgts.pdf, Pág 1)
-        """)
-        st.button("Confirmar Achado")
-        st.button("Descartar")
+    # Obter o ID da licitação atual
+    tender_id = st.session_state.get("current_tender_id") or st.session_state.get("tender_id")
+    if not tender_id:
+        st.warning("Por favor, analise um edital primeiro.")
+        return
+
+    # Buscar concorrentes reais do banco
+    from licitacoes.services.persistence import list_competitors
+    competitors = list_competitors(tender_id)
+
+    if not competitors:
+        st.info("Nenhum concorrente adicionado para análise.")
+        return
+
+    # Criar lista de nomes para o selectbox
+    competitor_names = [comp["name"] for comp in competitors]
+
+    # Usando a chave do concorrente para evitar a persistência visual do erro
+    concorrente_name = st.selectbox(
+        "Escolha o licitante para análise",
+        ["Nenhum"] + competitor_names,
+        key=f"sel_comp_{tender_id}"
+    )
+
+    if concorrente_name != "Nenhum":
+        # Identificar o ID do concorrente selecionado
+        comp_id = next(c["id"] for c in competitors if c["name"] == concorrente_name)
+
+        with st.spinner(f"Analisando documentos e preços de {concorrente_name}..."):
+            from licitacoes.services.competitor_analysis import CompetitorAnalysisService
+            achados = CompetitorAnalysisService.analyze_competitor(comp_id, tender_id)
+
+        if not achados:
+            st.success(f"✅ {concorrente_name} parece estar em conformidade.")
+        else:
+            for achado in achados:
+                if achado["type"] == "error":
+                    st.error(f"🔴 {achado['msg']}")
+                else:
+                    st.warning(f"⚠️ {achado['msg']}")
+
+            st.divider()
+            st.button("Confirmar Achados")
+            st.button("Descartar")
+
+    st.divider()
+    if st.button("PRÓXIMO PASSO: COMPARATIVO →", type="primary"):
+        _ir_para("comparativo")
+
+def page_comparativo():
+    st.header("📊 Passo 5: Comparativo de Preços")
+
+    tender_id = st.session_state.get("current_tender_id") or st.session_state.get("tender_id")
+    if not tender_id:
+        st.warning("Por favor, analise um edital primeiro.")
+        return
+
+    from licitacoes.services.persistence import get_items, list_competitors, get_competitor_proposal
+    from licitacoes.services.money import format_brl
+
+    items = get_items(tender_id)
+    competitors = list_competitors(tender_id)
+
+    if not items:
+        st.warning("Não há itens para comparar.")
+        return
+
+    if not competitors:
+        st.info("Adicione concorrentes para ver o comparativo.")
+        return
+
+    # Coletar preços reais dos concorrentes
+    comp_prices = {}
+    for comp in competitors:
+        props = get_competitor_proposal(comp["id"])
+        # Mapeia item_number -> proposed_cents
+        comp_prices[comp["id"]] = {p["item_number"]: p["proposed_cents"] for p in props}
+
+    # Preparar dados para a tabela
+    table_data = []
+    for it in items:
+        row = {
+            "Item": it["number"],
+            "Descrição": it["description"][:50] + "..." if len(it["description"]) > 50 else it["description"],
+            "Minha Empresa": it["proposed_cents"] or 0,
+        }
+
+        all_prices = [it["proposed_cents"] or 0]
+
+        for comp in competitors:
+            price = comp_prices[comp["id"]].get(it["number"], 0)
+            row[comp["name"]] = price
+            all_prices.append(price)
+
+        # Identificar Vencedor (Menor Preço > 0)
+        valid_prices = [p for p in all_prices if p > 0]
+        if not valid_prices:
+            winner = "N/A"
+        else:
+            min_price = min(valid_prices)
+            if min_price == (it["proposed_cents"] or 0):
+                winner = "🌟 Minha Empresa"
+            else:
+                winner = "Minha Empresa"
+                for comp in competitors:
+                    if comp_prices[comp["id"]].get(it["number"]) == min_price:
+                        winner = f"🏆 {comp['name']}"
+                        break
+
+        row["Vencedor"] = winner
+        table_data.append(row)
+
+    df_comp = pd.DataFrame(table_data)
+
+    # Formatação para exibição
+    display_df = df_comp.copy()
+    for col in df_comp.columns:
+        if col not in ["Item", "Descrição", "Vencedor"]:
+            display_df[col] = display_df[col].apply(lambda x: format_brl(int(x)) if x else "—")
+
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    st.info("💡 Os preços exibidos são aqueles extraídos automaticamente dos arquivos dos concorrentes.")
 
 def page_history():
     st.header("📁 Minhas Licitações")
@@ -234,6 +374,8 @@ elif st.session_state.page == "concorrentes":
     page_concorrentes()
 elif st.session_state.page == "resultado":
     page_resultado()
+elif st.session_state.page == "comparativo":
+    page_comparativo()
 elif st.session_state.page == "history":
     page_history()
 else:
